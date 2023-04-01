@@ -81,7 +81,7 @@ class GenerationTaskDataset(EvaluationDataset):
         text, targets = get_tokenized_input(item, "inputs"), get_tokenized_input(item, "targets")
         if len(text) + self.config.max_gen_length + 2 > self.config.max_seq_length:
             text_length = self.config.max_seq_length - self.config.max_gen_length - 2
-            text = text[len(text) - text_length : len(text)]
+            text = text[len(text) - text_length:]
         return {"text": text, "targets": targets}
 
     @property
@@ -145,14 +145,13 @@ class GenerationTaskDataset(EvaluationDataset):
         if not unidirectional:
             attention_mask[: context_length - 1, : context_length - 1] = 1
 
-        item = {
+        return {
             "token": token,
             "position_id": position_id,
             "target_position_id": target_position_id,
             "attention_mask": attention_mask,
             "context_length": context_length,
         }
-        return item
 
     def __getitem__(self, idx):
         item = self.data[idx]
@@ -206,7 +205,7 @@ class MultiChoiceTaskDataset(EvaluationDataset):
     def process_single_item(self, item):
         text, choices, label = get_tokenized_input(item, "inputs"), get_tokenized_input(item, "choices"), item["label"]
 
-        tgt_seq_length = sum([len(choice) for choice in choices])
+        tgt_seq_length = sum(len(choice) for choice in choices)
         if tgt_seq_length == len(choices):
             # For single token, we only insert one [sop]
             tgt_seq_length = 1
@@ -214,7 +213,7 @@ class MultiChoiceTaskDataset(EvaluationDataset):
         assert tgt_seq_length < self.config.max_seq_length
         if len(text) + tgt_seq_length + 2 > self.config.max_seq_length:
             text_length = self.config.max_seq_length - tgt_seq_length - 2
-            text = text[len(text) - text_length : len(text)]
+            text = text[len(text) - text_length:]
 
         assert not (
             self.mask_id in text and self.config.use_multitask_encoding
@@ -287,14 +286,15 @@ class MultiChoiceTaskDataset(EvaluationDataset):
         if is_single_token:
             choices = np.array(choices, dtype=np.int64).squeeze().tolist()
 
-        item = {
+        return {
             "token": token,
             "position_id": position_id,
             "attention_mask": attention_mask,
             "choices": choices,
-            "choice_target_ids": choice_target_id[0] if is_single_token else choice_target_id,
+            "choice_target_ids": choice_target_id[0]
+            if is_single_token
+            else choice_target_id,
         }
-        return item
 
     def __getitem__(self, idx):
         item = self.data[idx]

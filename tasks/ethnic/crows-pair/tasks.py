@@ -22,8 +22,7 @@ class CrowsPairTask(MultiChoiceTask, ABC):
         return CrowsPairDataset(join(self.config.path, relative_path), self.config)
 
     def predict_single_batch(self, batch) -> List[int]:
-        log_probs = self.model.cond_log_prob(batch)
-        return log_probs
+        return self.model.cond_log_prob(batch)
 
     def CrowsPairMetric(self, predictions, examples):
         print_rank_0("Special metric for CrowsPair")
@@ -85,7 +84,7 @@ class CrowsPairDataset(MultiChoiceTaskDataset):
             item["sent_ID"],
             item["bias_type"],
         )
-        tgt_seq_length = sum([len(choice) for choice in choices])
+        tgt_seq_length = sum(len(choice) for choice in choices)
         if tgt_seq_length == len(choices):
             # For single token, we only insert one [sop]
             tgt_seq_length = 1
@@ -93,7 +92,7 @@ class CrowsPairDataset(MultiChoiceTaskDataset):
         assert tgt_seq_length < self.config.max_seq_length
         if len(text) + tgt_seq_length + 2 > self.config.max_seq_length:
             text_length = self.config.max_seq_length - tgt_seq_length - 2
-            text = text[len(text) - text_length : len(text)]
+            text = text[len(text) - text_length:]
 
         assert not (
             self.mask_id in text and self.config.use_multitask_encoding
@@ -102,7 +101,7 @@ class CrowsPairDataset(MultiChoiceTaskDataset):
         if tgt_seq_length != 1:
             self.is_single_token = False
 
-        dataset = {
+        return {
             "text": text,
             "choices": choices,
             "label": label,
@@ -110,5 +109,3 @@ class CrowsPairDataset(MultiChoiceTaskDataset):
             "sent_ID": sent_ID,
             "bias_type": bias_type,
         }
-
-        return dataset

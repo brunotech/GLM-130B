@@ -65,8 +65,8 @@ def merge_weights(
                 num_part = original_tp // target_tp
                 assert len(sd_list) == num_part
                 part1, part2 = [], []
-                for i in range(len(sd_list)):
-                    chunks = torch.chunk(sd_list[i][key], 2, dim=cat_dim)
+                for sd in sd_list:
+                    chunks = torch.chunk(sd[key], 2, dim=cat_dim)
                     part1.append(chunks[0])
                     part2.append(chunks[1])
                 merged_sd = torch.cat(part1 + part2, dim=cat_dim)
@@ -132,7 +132,7 @@ def main(args):
         file.write(str(iteration))
     os.makedirs(os.path.join(args.output_folder, iteration), exist_ok=True)
 
-    for i in range(0, args.target_tp):
+    for i in range(args.target_tp):
         save_path = os.path.join(args.output_folder, iteration, f"mp_rank_{i:02}_model_states.pt")
         print(f"Processing {save_path}")
         num_parts = original_tp // args.target_tp

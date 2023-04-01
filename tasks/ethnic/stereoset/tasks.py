@@ -26,9 +26,10 @@ class StereoSetTask(MultiChoiceTask, ABC):
         log_probs = self.model.cond_log_prob(batch)
         normalize_log_probs = []
         for origin_datas, predicts in zip(batch.get("choices"), log_probs):
-            normalize_log_probs_single = []
-            for origin_data, predict in zip(origin_datas, predicts):
-                normalize_log_probs_single.append(predict / len(origin_data))
+            normalize_log_probs_single = [
+                predict / len(origin_data)
+                for origin_data, predict in zip(origin_datas, predicts)
+            ]
             normalize_log_probs.append(normalize_log_probs_single)
         return [np.argmax(log_probs_single).item() for log_probs_single in normalize_log_probs]
 
@@ -97,7 +98,7 @@ class StereoSetDataset(MultiChoiceTaskDataset):
         )
         # "ID":example.ID,"bias_type":example.bias_type,"goal_label":goal_label
         ID, bias_type, goal_label = item["ID"], item["bias_type"], item["goal_label"]
-        tgt_seq_length = sum([len(choice) for choice in choices])
+        tgt_seq_length = sum(len(choice) for choice in choices)
         if tgt_seq_length == len(choices):
             # For single token, we only insert one [sop]
             tgt_seq_length = 1
@@ -105,7 +106,7 @@ class StereoSetDataset(MultiChoiceTaskDataset):
         assert tgt_seq_length < self.config.max_seq_length
         if len(text) + tgt_seq_length + 2 > self.config.max_seq_length:
             text_length = self.config.max_seq_length - tgt_seq_length - 2
-            text = text[len(text) - text_length : len(text)]
+            text = text[len(text) - text_length:]
 
         assert not (
             self.mask_id in text and self.config.use_multitask_encoding
@@ -114,7 +115,7 @@ class StereoSetDataset(MultiChoiceTaskDataset):
         if tgt_seq_length != 1:
             self.is_single_token = False
 
-        dataset = {
+        return {
             "text": text,
             "choices": choices,
             "label": label,
@@ -122,5 +123,3 @@ class StereoSetDataset(MultiChoiceTaskDataset):
             "bias_type": bias_type,
             "goal_label": goal_label,
         }
-
-        return dataset

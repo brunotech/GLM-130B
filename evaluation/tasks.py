@@ -81,9 +81,7 @@ class BaseTask(ABC):
 
                 prediction = []
                 with torch.no_grad():
-                    for _, batch in enumerate(dataloader):
-                        prediction.append(self.predict_single_batch(batch))
-
+                    prediction.extend(self.predict_single_batch(batch) for batch in dataloader)
                 prediction = gather_result(prediction, len(dataset), self.config.micro_batch_size)
                 result_dict = {key: metric(prediction, dataset.data) for key, metric in self.metrics.items()}
                 result_dict_group[file] = (result_dict, len(dataset))
@@ -187,8 +185,7 @@ class GenerationTask(BaseTask, ABC):
             raise ValueError(f"unknown strategy {self.config.sampling_strategy}")
 
     def predict_single_batch(self, batch) -> List[List[int]]:
-        output = self.model.generate_text(batch, self.strategy, return_all_beams=False)
-        return output
+        return self.model.generate_text(batch, self.strategy, return_all_beams=False)
 
 
 class MultiChoiceTask(BaseTask, ABC):

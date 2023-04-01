@@ -67,11 +67,11 @@ def fill_blanks(raw_text: str, model, tokenizer, strategy) -> Tuple[List[str], L
 
     if "MASK]" not in raw_text:
         seq += [tokenizer.get_command(generation_mask)]
-        raw_text += " " + generation_mask
+        raw_text += f" {generation_mask}"
     if not raw_text.endswith("MASK]"):
-        seq = seq + [tokenizer.get_command("eos")]
+        seq += [tokenizer.get_command("eos")]
     if mpu.get_model_parallel_rank() == 0:
-        print("\nInput: {}\n".format(raw_text))
+        print(f"\nInput: {raw_text}\n")
     if len(seq) > args.max_sequence_length:
         raise ValueError("text too long.")
 
@@ -181,7 +181,7 @@ def main(args):
 
         # save
         if args.with_id:
-            full_path = os.path.join(args.output_path, query_id + ".txt")
+            full_path = os.path.join(args.output_path, f"{query_id}.txt")
         else:
             prefix = raw_text.replace("/", "")[:20]
             full_path = timed_name(prefix, ".txt", args.output_path)
@@ -192,7 +192,7 @@ def main(args):
                     if len(answer_with_style) > 120:
                         print("")
             else:
-                print(f"Output:", answers_with_style[0])  # print the first.
+                print("Output:", answers_with_style[0])
             with open(full_path, "w", encoding="utf-8") as fout:
                 for answer in answers:
                     fout.write(answer + "\n")

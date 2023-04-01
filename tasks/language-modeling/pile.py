@@ -46,7 +46,6 @@ class Pile(LanguageModelTask):
         for key, value in result.items():
             output_str += f"        {key} = {value:.3f}\n"
         print_rank_0(output_str)
-        pass
 
     def report_overall_metrics(self, result_dict_all: Dict[str, Tuple[Dict[str, float], int]]):
         pass

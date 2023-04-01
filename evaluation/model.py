@@ -106,8 +106,12 @@ class ModelForEvaluation(torch.nn.Module):
         log_probs = []
 
         if is_single_token:  # Single token
-            for logits, choices, choice_target_ids in zip(logits_batch, choices_batch, choice_target_ids_batch):
-                log_probs.append(logits[choice_target_ids[0], choices].tolist())
+            log_probs.extend(
+                logits[choice_target_ids[0], choices].tolist()
+                for logits, choices, choice_target_ids in zip(
+                    logits_batch, choices_batch, choice_target_ids_batch
+                )
+            )
         else:  # Multi token
             for output, choices, choice_target_ids in zip(logits_batch, choices_batch, choice_target_ids_batch):
                 log_probs_single = []

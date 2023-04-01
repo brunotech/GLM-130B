@@ -17,8 +17,7 @@ def build_data_loader(dataset, micro_batch_size, num_workers, drop_last, collate
         dataset, num_replicas=world_size, rank=rank, shuffle=False
     )
 
-    # Data loader. Note that batch size is the per GPU batch size.
-    data_loader = torch.utils.data.DataLoader(
+    return torch.utils.data.DataLoader(
         dataset,
         batch_size=micro_batch_size,
         sampler=sampler,
@@ -28,8 +27,6 @@ def build_data_loader(dataset, micro_batch_size, num_workers, drop_last, collate
         pin_memory=True,
         collate_fn=collate_fn,
     )
-
-    return data_loader
 
 
 def gather_result(prediction, total_length, micro_batch_size):
@@ -45,23 +42,21 @@ def gather_result(prediction, total_length, micro_batch_size):
     prediction = []
     for i in range(len(prediction_gathered[0])):
         for j in range(micro_batch_size):
-            for k in range(world_size):
-                if j < len(prediction_gathered[k][i]):
-                    prediction.append(prediction_gathered[k][i][j])
-    prediction = prediction[:total_length]
-    return prediction
+            prediction.extend(
+                prediction_gathered[k][i][j]
+                for k in range(world_size)
+                if j < len(prediction_gathered[k][i])
+            )
+    return prediction[:total_length]
 
 
 def get_tokenized_input(item, key):
     if key in item:
         return item[key]
     tokenizer = get_tokenizer()
-    pretokenized_key = key + "_pretokenized"
+    pretokenized_key = f"{key}_pretokenized"
     assert pretokenized_key in item
     if isinstance(item[pretokenized_key], list):
-        result = []
-        for raw in item[pretokenized_key]:
-            result.append(tokenizer.tokenize(raw))
-        return result
+        return [tokenizer.tokenize(raw) for raw in item[pretokenized_key]]
     else:
         return tokenizer.tokenize(item[pretokenized_key])

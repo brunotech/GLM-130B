@@ -15,11 +15,12 @@ from .utils import print_rank_0
 
 
 def accuracy_metric(predictions, examples):
-    count = 0
     num_predictions = max(len(predictions), 1)
     assert len(predictions) == len(examples)
-    for prediction, example in zip(predictions, examples):
-        count += prediction == example["label"]
+    count = sum(
+        prediction == example["label"]
+        for prediction, example in zip(predictions, examples)
+    )
     return count * 100.0 / num_predictions
 
 
@@ -27,9 +28,9 @@ def F1_metric(predictions, examples):
     assert len(predictions) == len(examples)
     from sklearn.metrics import f1_score
 
-    truth = []
-    for prediction, example in zip(predictions, examples):
-        truth.append(example["label"])
+    truth = [
+        example["label"] for prediction, example in zip(predictions, examples)
+    ]
     return f1_score(truth, predictions, average="micro") * 100.0
 
 
@@ -37,9 +38,9 @@ def precision_metric(predictions, examples):
     assert len(predictions) == len(examples)
     from sklearn.metrics import precision_score
 
-    truth = []
-    for prediction, example in zip(predictions, examples):
-        truth.append(example["label"])
+    truth = [
+        example["label"] for prediction, example in zip(predictions, examples)
+    ]
     return precision_score(truth, predictions, average="micro") * 100.0
 
 
@@ -47,9 +48,9 @@ def recall_metric(predictions, examples):
     assert len(predictions) == len(examples)
     from sklearn.metrics import recall_score
 
-    truth = []
-    for prediction, example in zip(predictions, examples):
-        truth.append(example["label"])
+    truth = [
+        example["label"] for prediction, example in zip(predictions, examples)
+    ]
     return recall_score(truth, predictions, average="micro") * 100.0
 
 
@@ -81,8 +82,7 @@ def f1_score(prediction, ground_truth):
         return 0
     precision = 1.0 * num_same / len(prediction_tokens)
     recall = 1.0 * num_same / len(ground_truth_tokens)
-    f1 = (2 * precision * recall) / (precision + recall)
-    return f1
+    return (2 * precision * recall) / (precision + recall)
 
 
 def exact_match_score(prediction, ground_truth):
@@ -126,15 +126,12 @@ def special_for_dataset(predictions, examples):
     return True
 
 
-DEFAULT_METRICS = defaultdict(lambda: special_for_dataset)
-DEFAULT_METRICS.update(
-    {
-        "EM": qa_exact_match,
-        "F1": qa_f1,
-        "Accuracy": accuracy_metric,
-        "PPL": calculate_perplexity,
-        "Precision": precision_metric,
-        "Recall": recall_metric,
-        "F1_mul": F1_metric,
-    }
-)
+DEFAULT_METRICS = defaultdict(lambda: special_for_dataset) | {
+    "EM": qa_exact_match,
+    "F1": qa_f1,
+    "Accuracy": accuracy_metric,
+    "PPL": calculate_perplexity,
+    "Precision": precision_metric,
+    "Recall": recall_metric,
+    "F1_mul": F1_metric,
+}
